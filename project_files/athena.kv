@@ -1,0 +1,251 @@
+<BaseLayout>:
+    orientation: "horizontal"
+
+    MenuBox:
+        canvas.before:
+            Color:
+                rgba:  .15, .15, .15, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+    ChatBox:
+        canvas.before:
+            Color:
+                rgba: .3, .3, .35, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+<MenuBox>:
+    id: MenuBox
+    orientation: "vertical"
+    size_hint_x: None
+    width: 256
+    padding: 10
+    spacing: 10
+
+    Button:
+        text: "text_vaninci__003"
+        size_hint_y: None
+        height: 44
+
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_y: None
+        height: 80
+
+        BoxLayout:
+            orientation: "horizontal"
+            Label:
+                text: "Temperature"
+                text_size: self.size
+                valign: "center"
+                halign: "left"
+            TextInput:
+                id: tempInput
+                multiline: False
+                text: "0.70"
+                size_hint: None, 1
+                width: 40
+                padding: [0, self.height / 2.0 - (self.line_height / 2.0) * len(self._lines)]
+                halign: "center"
+                on_text: root.UpdatePropertyLabel(self, root.ids.tempSlider)
+        Slider:
+            id: tempSlider
+            min: 0
+            max: 1
+            value: .7
+            on_value: root.UpdateOpenAIValue("temp", self.value, tempInput)
+
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_y: None
+        height: 80
+
+        BoxLayout:
+            orientation: "horizontal"
+            Label:
+                text: "Maximum Length"
+                text_size: self.size
+                valign: "center"
+                halign: "left"
+            TextInput:
+                id: maxLenInput
+                multiline: False
+                text: "400"
+                size_hint: None, 1
+                width: 40
+                padding: [0, self.height / 2.0 - (self.line_height / 2.0) * len(self._lines)]
+                halign: "center"
+                on_text: root.UpdatePropertyLabel(self, root.ids.maxLenSlider, True)
+        Slider:
+            id: maxLenSlider
+            min: 1
+            max: 4000
+            value: 400
+            on_value: root.UpdateOpenAIValue("maxLen", self.value, maxLenInput, True)
+
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_y: None
+        height: 80
+
+        BoxLayout:
+            orientation: "horizontal"
+            Label:
+                text: "Top P"
+                text_size: self.size
+                valign: "center"
+                halign: "left"
+            TextInput:
+                id: topPInput
+                multiline: False
+                text: "1.00"
+                size_hint: None, 1
+                width: 40
+                padding: [0, self.height / 2.0 - (self.line_height / 2.0) * len(self._lines)]
+                halign: "center"
+                on_text: root.UpdatePropertyLabel(self, root.ids.topPSlider)
+        Slider:
+            id: topPSlider
+            min: 0
+            max: 1
+            value: 1
+            on_value: root.UpdateOpenAIValue("topP", self.value, topPInput)
+
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_y: None
+        height: 80
+
+        BoxLayout:
+            orientation: "horizontal"
+            Label:
+                text: "Frequency Penalty"
+                text_size: self.size
+                valign: "center"
+                halign: "left"
+            TextInput:
+                id: freqPenInput
+                multiline: False
+                text: "0.00"
+                size_hint: None, 1
+                width: 40
+                padding: [0, self.height / 2.0 - (self.line_height / 2.0) * len(self._lines)]
+                halign: "center"
+                on_text: root.UpdatePropertyLabel(self, root.ids.freqPenSlider)
+        Slider:
+            id: freqPenSlider
+            min: 0
+            max: 1
+            value: 0
+            on_value: root.UpdateOpenAIValue("freqPen", self.value, freqPenInput)
+
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_y: None
+        height: 80
+
+        BoxLayout:
+            orientation: "horizontal"
+            Label:
+                text: "Presence Penalty"
+                text_size: self.size
+                valign: "center"
+                halign: "left"
+            TextInput:
+                id: presPenInput
+                multiline: False
+                text: "0.00"
+                size_hint: None, 1
+                width: 40
+                padding: [0, self.height / 2.0 - (self.line_height / 2.0) * len(self._lines)]
+                halign: "center"
+                on_text: root.UpdatePropertyLabel(self, root.ids.presPenSlider)
+        Slider:
+            id: presPenSlider
+            min: 0
+            max: 1
+            value: 0
+            on_value: root.UpdateOpenAIValue("presPen", self.value, presPenInput)
+
+    BoxLayout:
+
+
+<ChatBox>:
+    id: chatBox
+    orientation: "vertical"
+    BoxLayout:
+        canvas.before:
+            Color:
+                rgba: .3, .3, .35, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        orientation: "vertical"
+        ScrollView:
+            id: ChatScroll
+            BoxLayout:
+                id: ChatRegion
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+                padding: 20
+                spacing: 5
+    BoxLayout:
+        canvas.before:
+            Color:
+                rgba: .2, .2, .25, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        multiline: False
+        size_hint_y: None
+        height: self.minimum_height
+        padding:20
+
+        TextInput:
+            id: PromptInput
+            size_hint: (1, None)
+            height: self.minimum_height
+            pos_hint: {"right": .8, "center_y": .5}
+
+        Button:
+            size_hint: (None, None)
+            height: 30
+            width: 30
+            pos_hint: {"right": .9, "center_y": .5}
+            on_release: root.SubmitQuery(root.ids.PromptInput, root.ids.PromptInput.text)
+
+<UserLabel>
+    canvas.before:
+        Color:
+            rgba: 0, .6, .3, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [(8, 8), (8, 8), (0, 0), (8, 8)]
+    color: 0, 0, 0, 1
+    text: "This is a Question"
+    text_size: (self.width - 10, None)
+    size_hint: .6, None
+    height: self.texture_size[1] + 10
+
+<BotLabel>
+    canvas.before:
+        Color:
+            rgba: 0, .3, .6, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [(8, 8), (8, 8), (8, 8), (0, 0)]
+    color: 0, 0, 0, 1
+    text: "This is an Answer"
+    text_size: (self.width - 10, None)
+    size_hint: .6, None
+    height: self.texture_size[1] + 10
+
+<MessageBox>
+    size_hint_y: None
+    height: self.minimum_height

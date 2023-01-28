@@ -1,0 +1,269 @@
+from kivymd.app import MDApp, Builder
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.textinput import TextInput
+from kivy.uix.scrollview import ScrollView
+from kivymd.uix.button import MDIconButton
+from kivy.uix.button import Button
+from kivy.uix.dropdown import DropDown
+from kivy.uix.slider import Slider
+from kivy.uix.label import Label
+from kivy.graphics.svg import Svg
+from kivy.graphics import Color
+from kivy.graphics import Rectangle
+from openai_wrapper import OpenAiWrapper
+from util import *
+import os
+from math import floor
+
+projectDir = os.getcwd() + '\\project_files\\'
+#kv = Builder.load_file(projectDir + "athena.kv")
+apiKey = OpenFile(f"{projectDir}openaiapikey.txt")
+openAI = OpenAiWrapper(OpenFile(projectDir + 'openaiapikey.txt'), projDir=projectDir)
+models = ['ada', 'ada-code-search-code', 'ada-code-search-text', 'ada-search-document', 'ada-search-query', 'ada-similarity', 'ada:2020-05-03', 'audio-transcribe-001', 'babbage', 'babbage-code-search-code', 'babbage-code-search-text', 'babbage-search-document', 'babbage-search-query', 'babbage-similarity', 'babbage:2020-05-03', 'code-cushman-001', 'code-davinci-002', 'code-davinci-edit-001', 'code-search-ada-code-001', 'code-search-ada-text-001', 'code-search-babbage-code-001', 'code-search-babbage-text-001', 'curie', 'curie-instruct-beta', 'curie-search-document', 'curie-search-query', 'curie-similarity', 'curie:2020-05-03', 'cushman:2020-05-03', 'davinci', 'davinci-if:3.0.0', 'davinci-instruct-beta', 'davinci-instruct-beta:2.0.0', 'davinci-search-document', 'davinci-search-query', 'davinci-similarity', 'davinci:2020-05-03', 'if-curie-v2', 'if-davinci-v2', 'if-davinci:3.0.0', 'text-ada-001', 'text-ada:001', 'text-babbage-001', 'text-babbage:001', 'text-curie-001', 'text-curie:001', 'text-davinci-001', 'text-davinci-002', 'text-davinci-003', 'text-davinci-edit-001', 'text-davinci-insert-001', 'text-davinci-insert-002', 'text-davinci:001', 'text-embedding-ada-002', 'text-search-ada-doc-001', 'text-search-ada-query-001', 'text-search-babbage-doc-001', 'text-search-babbage-query-001', 'text-search-curie-doc-001', 'text-search-curie-query-001', 'text-search-davinci-doc-001', 'text-search-davinci-query-001', 'text-similarity-ada-001', 'text-similarity-babbage-001', 'text-similarity-curie-001', 'text-similarity-davinci-001']
+
+class ChatLabel(Label):
+    pass
+
+class BaseLayout(BoxLayout):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.orientation = 'horizontal'
+        self.add_widget(MenuBox())
+        self.add_widget(ChatBox())
+
+
+class ModelDropdown(DropDown):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+class MenuBox(BoxLayout):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        with self.canvas.before:
+            Color(.15, .15, .15)
+            self.rect = Rectangle(pos=self.pos, size=self.size)
+        self.bind(pos=self.UpdateCanvas)
+        self.bind(size=self.UpdateCanvas)
+
+        self.orientation = "vertical"
+        self.spacing = "12dp"
+        self.padding = "12dp"
+
+        self.size_hint = (None, 1)
+        self.width = "256dp"
+
+        #### model Button and Dropdown
+        self.modelDropdown = ModelDropdown()
+        self.modelSelectButton = Button()
+
+        for model in models:
+            btn = Button(text=model, size_hint_y=None, height=44)
+            btn.bind(on_release=self.UpdateModel)
+
+            self.modelDropdown.add_widget(btn)
+
+        self.add_widget(self.modelSelectButton)
+        self.modelSelectButton.text = 'text-davinci-003'
+        self.modelSelectButton.size_hint = (1, None)
+        self.modelSelectButton.height = 44
+        self.modelSelectButton.bind(on_release=self.OpenDropdown)
+
+        #### Temperature Slider
+        self.tempBox = BoxLayout(orientation="vertical", size_hint_y = None, height = 60)
+        self.tempLabel = Label(text = "Temperature - .50", size_hint_x=None, text_size=(335, 20), halign="right")
+        self.tempBox.add_widget(self.tempLabel)
+        self.tempSlider = Slider(min=0, max=1, value=.5)
+        self.tempBox.add_widget(self.tempSlider)
+        self.add_widget(self.tempBox)
+        self.tempSlider.bind(value=lambda i, val : self.UpdateOpenAiValue('Temperature - ', self.tempLabel, openAI.SetTemp, val))
+
+        #### Max Length Slider
+        self.maxLenBox = BoxLayout(orientation="vertical", size_hint_y = None, height = 60)
+        self.maxLenLabel = Label(text = "Max Length - 400", size_hint_x=None, text_size=(335, 20), halign="right")
+        self.maxLenBox.add_widget(self.maxLenLabel)
+        self.maxLenSlider = Slider(min=1, max=4000, value=400)
+        self.maxLenBox.add_widget(self.maxLenSlider)
+        self.add_widget(self.maxLenBox)
+        self.maxLenSlider.bind(value=lambda i, val : self.UpdateOpenAiValue('Max Length - ', self.maxLenLabel, openAI.SetMaxLength, int(floor(val)), False))
+
+        #### Top P Slider
+        self.topPBox = BoxLayout(orientation="vertical", size_hint_y = None, height = 60)
+        self.topPLabel = Label(text="Top P - 1.00", size_hint_x=None, text_size=(335, 20), halign="right")
+        self.topPBox.add_widget(self.topPLabel)
+        self.topPSlider = Slider(min=0, max=1, value=1)
+        self.topPBox.add_widget(self.topPSlider)
+        self.add_widget(self.topPBox)
+        self.topPSlider.bind(value=lambda i, val : self.UpdateOpenAiValue('Top P - ', self.topPLabel, openAI.SetTopP, val))
+
+        #### Frequency Penalty Slider
+        self.freqPenBox = BoxLayout(orientation="vertical", size_hint_y = None, height = 60)
+        self.freqPenLabel = Label(text="Frequency Penalty - 0.00", size_hint_x=None, text_size=(335, 20), halign="right")
+        self.freqPenBox.add_widget(self.freqPenLabel)
+        self.freqPenSlider = Slider(min=0, max=2, value=0)
+        self.freqPenBox.add_widget(self.freqPenSlider)
+        self.add_widget(self.freqPenBox)
+        self.freqPenSlider.bind(value=lambda i, val : self.UpdateOpenAiValue('Frequency Penalty - ', self.freqPenLabel, openAI.SetFreqPen, val))
+
+        #### Presence Penalty Slider
+        self.presPenBox = BoxLayout(orientation="vertical", size_hint_y = None, height = 60)
+        self.presPenLabel = Label(text="Presence Penalty - 0.00", size_hint_x=None, text_size=(335, 20), halign="right")
+        self.presPenBox.add_widget(self.presPenLabel)
+        self.presPenSlider = Slider(min=0, max=2, value=0)
+        self.presPenBox.add_widget(self.presPenSlider)
+        self.add_widget(self.presPenBox)
+        self.presPenSlider.bind(value=lambda i, val : self.UpdateOpenAiValue('Presence Penalty - ', self.presPenLabel, openAI.SetPresPen, val))
+
+        self.add_widget(BoxLayout())
+
+    def UpdateOpenAiValue(self, text, label, func, val, dec=True):
+        func(val)
+        if dec:
+            label.text = f"{text}{val:.2f}"
+        else:
+            label.text = f"{text}{val}"
+
+    def UpdateCanvas(self, *args):
+        self.rect.pos = self.pos
+        self.rect.size = self.size
+
+    def UpdateModel(self, instance):
+        self.modelSelectButton.text = instance.text
+        openAI.model = instance.text
+        self.modelDropdown.dismiss()
+
+    def OpenDropdown(self, instance):
+        self.modelDropdown.open(instance)
+        with self.modelDropdown.canvas.before:
+            Color(0, 0, 0)
+            self.rect = Rectangle(pos=self.modelDropdown.pos, size=self.modelDropdown.size)
+
+class ChatBox(BoxLayout):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        with self.canvas.before:
+            Color(.3, .3, .35)
+            self.rect = Rectangle(pos=self.pos, size=self.size)
+        self.bind(pos=self.UpdateCanvas)
+        self.bind(size=self.UpdateCanvas)
+
+        self.floatLayout = FloatLayout()
+        self.add_widget(self.floatLayout)
+
+        #### Add Prompt Input
+        self.promptInput = TextInput()
+        self.floatLayout.add_widget(self.promptInput)        
+        self.promptInput.size_hint = (.9, None)
+        self.promptInput.font_size = 20
+        self.promptInput.height = self.promptInput.font_size + 20
+        self.promptInput.pos_hint = {"right": .95, "center_y": (self.promptInput.height / 2.0) / self.floatLayout.height}
+        self.promptInput.background_normal = ""
+        self.promptInput.background_color = (.5, .5, .55)
+        self.promptInput.foreground_color = (1, 1, 1)
+        self.promptInput.bind(text=self.TextUpdate)
+        self.promptInput.bind(pos=self.UpdatePromptInput)
+
+        #### Add Prompt Submit Button
+        self.promptSubmit = MDIconButton()
+        self.floatLayout.add_widget(self.promptSubmit)
+        self.promptSubmit.size_hint = (None, None)
+        self.promptSubmit.size = (self.promptInput.height, self.promptInput.height)
+        self.promptSubmit.icon = "send"
+
+        #### Add Chat Scroll Area
+        self.chatScroll = ScrollView()
+        self.floatLayout.add_widget(self.chatScroll)
+        with self.chatScroll.canvas.before:
+            Color(1, 1, 1)
+            self.chatScroll.rect = Rectangle(pos=self.chatScroll.pos, size=self.chatScroll.size)
+        self.chatScroll.bind(pos=self.UpdateCanvas)
+        self.chatScroll.bind(size=self.UpdateCanvas)
+
+        self.chatScroll.size_hint_y = 1 - (self.promptInput.height + 40) / self.floatLayout.height
+        self.chatScroll.pos_hint = {"center_y": 1 - (self.chatScroll.size_hint_y / 2)}
+        self.chatScroll.pos = (256, 0)
+        self.chatScroll.bind(pos = self.UpdateChatScroll)
+        self.chatScroll.bind(size = self.UpdateChatScroll)
+
+        self.flexBox = BoxLayout(orientation="vertical", size_hint=(1, None), height=5, pos_hint={"top":.5})
+        with self.flexBox.canvas.before:
+            Color(0, 0, 0)
+            self.flexBox.rect = Rectangle(pos=self.flexBox.pos, size=self.flexBox.size)
+        self.flexBox.spacing = 10
+        self.flexBox.bind(pos=self.UpdateCanvas)
+        self.flexBox.bind(size=self.UpdateCanvas)
+
+        self.chatScroll.add_widget(self.flexBox)        
+
+        self.AddChatLabel("This is a question", "right")
+        self.AddChatLabel("This is an answer")
+        self.AddChatLabel("This is a questionThis is a questionThis is a questionThis is a questionThis is a questionThis is a questionThis is a questionThis is a questionThis is a questionThis is a questionThis is a question", "right")
+        self.AddChatLabel("This is an answer")
+
+
+    def AddChatLabel(self, text, pos="left"):
+        label = ChatLabel(text=text, halign="left")
+        with label.canvas.before:
+            if (pos == "right"):
+                Color(.5, .5, 1)
+            else:
+                Color(1, .5, .5)
+            label.rect = Rectangle(pos=label.pos, size=label.size)
+        if (pos == "right"):
+            label.pos_hint = {"x":1-.8}
+        self.flexBox.add_widget(label)
+        label.bind(
+                    pos=self.UpdateCanvas,
+                    size=self.UpdateCanvas,
+                    width=lambda *x: label.setter('text_size')(label, (label.width-180, None)),
+                    texture_size=lambda *x: label.setter('height')(label, label.texture_size[1]),
+                  )
+
+
+    def AdjustLabelSize(self, instance, val):
+        self.flexBox.height += val    
+
+
+    def UpdateChatScroll(self, *args):
+        self.chatScroll.size_hint_y = 1 - (self.promptInput.height + 20) / self.floatLayout.height
+        self.chatScroll.pos_hint = {"center_y": 1 - (self.chatScroll.size_hint_y / 2)}
+
+
+    def UpdatePromptInput(self, *args):
+        self.promptInput.size_hint = (.9 - (self.promptInput.font_size + 20) / self.floatLayout.width, None)
+        self.promptInput.pos_hint["right"] = .95 - self.promptInput.height / self.floatLayout.width
+        self.promptInput.pos_hint["center_y"] = ((self.promptInput.height / 2.0) / self.floatLayout.height) + .01
+        self.floatLayout._trigger_layout()
+        self.promptSubmit.pos_hint = {"right": .95, "center_y": ((self.promptInput.font_size + 20) / 2) / self.floatLayout.height + .01}
+
+    def UpdateCanvas(self, instance, val):
+        instance.rect.pos = instance.pos
+        instance.rect.size = instance.size
+
+    def TextUpdate(self, textInput, text):
+        width = textInput.width - textInput.padding[0] - textInput.padding[2]
+        txtWidth = textInput._get_text_width(text, textInput.tab_width, textInput._label_cached)
+        lines = (txtWidth // width) + 1
+        totalTextHeight = self.promptInput.font_size * lines
+        verticalPadding = 20
+        lineSpacing = 4 * (lines - 1)
+        textInput.height = totalTextHeight + verticalPadding + lineSpacing
+
+
+class Main(MDApp):
+    def build(self):
+        return BaseLayout()
+
+
+if __name__ == '__main__':
+    Main().run()
+    
+    # openAI = OpenAiWrapper(OpenFile(projectDir + 'openaiapikey.txt'), projDir=projectDir)
+    
+    # while True:
+    #     openAI.Prompt(input(f'\n\n{openAI.user}: '))
