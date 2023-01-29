@@ -1,25 +1,15 @@
-
-
 from kivymd.app import MDApp, Builder
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.textinput import TextInput
-from kivy.uix.scrollview import ScrollView
-from kivymd.uix.button import MDIconButton
-from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
 from kivy.uix.slider import Slider
 from kivy.uix.label import Label
-from kivy.graphics.svg import Svg
-from kivy.graphics import Color
-from kivy.graphics import Rectangle
 from openai_wrapper import OpenAiWrapper
 from functools import partial
 from kivy.clock import Clock
 import threading
 from util import *
 import os
-from math import floor
 
 projectDir = os.getcwd() + '\\project_files\\'
 apiKey = OpenFile(f"{projectDir}openaiapikey.txt")
