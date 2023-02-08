@@ -4,6 +4,8 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.dropdown import DropDown
 from kivy.uix.slider import Slider
 from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.uix.widget import Widget
 from openai_wrapper import OpenAiWrapper
 from functools import partial
 from kivy.clock import Clock
@@ -33,6 +35,21 @@ class BaseLayout(BoxLayout):
 
 class MenuBox(BoxLayout):
 
+    def CreateDropdown(self, instance:Widget):
+        dropdown = DropDown()
+
+        for model in models:
+            btn = Button(text=model, size_hint=(1, None), height="40dp")
+            btn.bind(on_press=self.UpdateModel)
+            dropdown.add_widget(btn)
+
+        dropdown.open(instance)
+
+    def UpdateModel(self, instance:Widget):
+        self.ids.ModelButton.text = instance.text
+        self.UpdateOpenAIValue("model", instance.text, None)
+        instance.parent.parent.dismiss()
+
     def UpdatePropertyLabel(self, textInput:TextInput, slider:Slider, isInt=False):
         try:
             val = float(textInput.text)
@@ -58,6 +75,7 @@ class MenuBox(BoxLayout):
         match property:
             case "model":
                 openAI.model = value
+                return
             case "temp":
                 openAI.temp = value
             case "maxLen":

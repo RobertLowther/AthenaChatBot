@@ -26,9 +26,11 @@
     spacing: 10
 
     Button:
-        text: "text_vaninci__003"
+        id: ModelButton
+        text: "text-davinci-003"
         size_hint_y: None
         height: 44
+        on_release: root.CreateDropdown(self)
 
     BoxLayout:
         orientation: "vertical"
@@ -213,6 +215,7 @@
 
         Button:
             size_hint: (None, None)
+            text: ">"
             height: 30
             width: 30
             pos_hint: {"right": .9, "center_y": .5}
